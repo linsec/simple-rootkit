@@ -25,7 +25,7 @@ asmlinkage long (*ref_sys_read)(unsigned int fd, char __user *buf, size_t count)
 /* Our new system call function; a wrapper for the original read. */
 asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
 {
-    /* execute the original write call, and hold on to its return value
+    /* execute the original read call, and hold on to its return value
     * now we can add whatever we want to the buffer before exiting
     * the function.
     */
