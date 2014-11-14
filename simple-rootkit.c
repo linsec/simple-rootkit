@@ -77,7 +77,7 @@ static unsigned long **aquire_sys_call_table(void)
     /* Scan memory searching for the syscall table, which is contigious */
     printk("Starting syscall table scan from: %lx\n", offset);
     while (offset < ULLONG_MAX) {
-            /* cast our starting offset to match the system call table's type */
+        /* cast our starting offset to match the system call table's type */
         sct = (unsigned long **)offset;
 
         /* We're scanning for a bit pattern that matches sct[__NR_close]
