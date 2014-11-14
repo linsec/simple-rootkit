@@ -3,7 +3,7 @@
 #include <linux/syscalls.h> // The syscall table and __NR_<syscall_name> helpers
 #include <asm/paravirt.h> // read_cr0, write_cr0
 #include <linux/sched.h> // current task_struct
-#include <linux/slab.h> // kmalloc
+#include <linux/slab.h> // kmalloc, kfree
 #include <asm/uaccess.h> // copy_from_user, copy_to_user
 
 /* The sys_call_table is const but we can point our own variable at
@@ -71,6 +71,7 @@ asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
                     kernel_buf[i+5] = 'n';
                 }
             }
+
             copy_to_user(buf, kernel_buf, count);
             kfree(kernel_buf);
         }
