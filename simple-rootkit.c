@@ -80,9 +80,11 @@ static unsigned long **aquire_sys_call_table(void)
             /* cast our starting offset to match the system call table's type */
         sct = (unsigned long **)offset;
 
-            /* We're scanning for a bit pattern that matches sct[__NR_close]
-             * so we just increase 'offset' until we find it.
-             */
+        /* We're scanning for a bit pattern that matches sct[__NR_close]
+         * so we just increase 'offset' until we find it. Put another way
+         * we're looking for the first location in memory which seems to hold
+         * the address of the sys_close function.
+         */
         if (sct[__NR_close] == (unsigned long *) sys_close) {
             printk("Syscall table found at: %lx\n", offset);
             return sct;
