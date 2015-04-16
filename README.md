@@ -1,5 +1,6 @@
 Simple Rootkit
 =====================
+`another system call intecept/hook method.`
 
 <img src="trust.gif"></img>
 
